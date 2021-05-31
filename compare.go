@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"unicode/utf8"
 
 	"github.com/spf13/afero"
 )
@@ -91,67 +92,87 @@ func listsEqual(listA, listB []string) bool {
 }
 
 func CompareFile(fsA, fsB afero.Fs, pathA, pathB string) (bool, error) {
+	same, _, err := DiffFile(fsA, fsB, pathA, pathB)
+	return same, err
+}
+
+func DiffFile(fsA, fsB afero.Fs, pathA, pathB string) (bool, string, error) {
 	sa, err := fsA.Stat(pathA)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	sb, err := fsB.Stat(pathB)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	if sa.Size() != sb.Size() {
-		return false, nil
+		return false, fmt.Sprintf("size differs between %d and %d", sa.Size(), sb.Size()), nil
 	}
 
 	aMod := sa.Mode()
 	bMod := sb.Mode()
 
 	if aMod != bMod {
-		return false, nil
+		return false, fmt.Sprintf("permissions differ between %#o and %#o", sa.Mode(), sb.Mode()), nil
 	}
 
 	fA, err := fsA.Open(pathA)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 	defer fA.Close()
 
 	fB, err := fsB.Open(pathB)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 	defer fB.Close()
 
-	return CompareReader(fA, fB)
+	return DiffReader(fA, fB)
 }
 
 func CompareReader(a, b io.Reader) (bool, error) {
-	bufA := make([]byte, 512)
-	bufB := make([]byte, 512)
+	same, _, err := DiffReader(a, b)
+	return same, err
+}
+
+func DiffReader(a, b io.Reader) (bool, string, error) {
+	bufA := make([]byte, 128)
+	bufB := make([]byte, 128)
 
 	for {
-		_, errA := a.Read(bufA)
+		lenA, errA := a.Read(bufA)
 		if errA != nil && errA != io.EOF {
-			return false, errA
+			return false, "", errA
 		}
 
-		_, errB := b.Read(bufB)
+		lenB, errB := b.Read(bufB)
 		if errB != nil && errB != io.EOF {
-			return false, errB
+			return false, "", errB
 		}
 
 		if !bytes.Equal(bufA, bufB) {
-			return false, nil
+			if utf8.Valid(bufA) && utf8.Valid(bufB) {
+				snippetA := string(bufA[0:lenA])
+				snippetB := string(bufB[0:lenB])
+				return false, fmt.Sprintf("content differs between %s and %s", snippetA, snippetB), nil
+			}
+
+			return false, fmt.Sprintf("content differs between %v and %v", bufA, bufB), nil
 		}
 
 		if errA == io.EOF && errB == io.EOF {
-			return true, nil
+			return true, "", nil
 		}
 
-		if errA == io.EOF || errB == io.EOF {
-			return false, nil
+		if errA == io.EOF {
+			return false, "end of first reader reached before end of second reader", nil
+		}
+
+		if errA == io.EOF {
+			return false, "end of second reader reached before end of first reader", nil
 		}
 	}
 }

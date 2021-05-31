@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func TestCompareReader(t *testing.T) {
+func TestDiffReader_(t *testing.T) {
 	type args struct {
 		a io.Reader
 		b io.Reader
@@ -18,54 +18,54 @@ func TestCompareReader(t *testing.T) {
 		name    string
 		args    args
 		want    bool
+		want1   string
 		wantErr bool
 	}{
 		{
-			"same files",
-			args{
+			name: "same files",
+			args: args{
 				bytes.NewReader([]byte("abcdef")),
 				bytes.NewReader([]byte("abcdef")),
 			},
-			true,
-			false,
+			want: true,
 		},
 		{
-			"different files",
-			args{
+			name: "different files",
+			args: args{
 				bytes.NewReader([]byte("abcdef")),
 				bytes.NewReader([]byte("uvwxyz")),
 			},
-			false,
-			false,
+			want1: "content differs between abcdef and uvwxyz",
 		},
 		{
-			"different length",
-			args{
+			name: "different length",
+			args: args{
 				bytes.NewReader([]byte("abcdefghijkl")),
 				bytes.NewReader([]byte("uvwxyz")),
 			},
-			false,
-			false,
+			want1: "content differs between abcdefghijkl and uvwxyz",
 		},
 		{
-			"empty files",
-			args{
+			name: "empty files",
+			args: args{
 				bytes.NewReader([]byte("")),
 				bytes.NewReader([]byte("")),
 			},
-			true,
-			false,
+			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CompareReader(tt.args.a, tt.args.b)
+			got, got1, err := DiffReader(tt.args.a, tt.args.b)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CompareReader() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DiffReader() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CompareReader() = %v, want %v", got, tt.want)
+				t.Errorf("DiffReader() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("DiffReader() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -100,73 +100,73 @@ func TestCompareFile(t *testing.T) {
 		name    string
 		args    args
 		want    bool
+		want1   string
 		wantErr bool
 	}{
 		{
-			"same files",
-			args{
+			name: "same files",
+			args: args{
 				fsA,
 				fsB,
 				"/file",
 				"/filesame",
 			},
-			true,
-			false,
+			want: true,
 		},
 		{
-			"different content",
-			args{
+			name: "different content",
+			args: args{
 				fsA,
 				fsB,
 				"/file",
 				"/fileother",
 			},
-			false,
-			false,
+			want1: "content differs between abcdef and uvwxyz",
 		},
 		{
-			"different permissions",
-			args{
+			name: "different permissions",
+			args: args{
 				fsA,
 				fsB,
 				"/file",
 				"/permissions",
 			},
-			false,
-			false,
+			want1: "permissions differ between 0644 and 0600",
 		},
 		{
-			"different length",
-			args{
+			name: "different length",
+			args: args{
 				fsA,
 				fsB,
 				"/file",
 				"/longer",
 			},
-			false,
-			false,
+			want1: "size differs between 6 and 12",
 		},
 		{
-			"empty files",
-			args{
+			name: "empty files",
+			args: args{
 				fsA,
 				fsB,
 				"/empty",
 				"/empty",
 			},
-			true,
-			false,
+			want: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CompareFile(tt.args.fsA, tt.args.fsB, tt.args.pathA, tt.args.pathB)
+			got, got1, err := DiffFile(tt.args.fsA, tt.args.fsB, tt.args.pathA, tt.args.pathB)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CompareFile() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DiffFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CompareFile() = %v, want %v", got, tt.want)
+				t.Errorf("DiffFile() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("DiffFile() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -259,14 +259,14 @@ func TestDiffDir(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, err := DiffDir(tt.args.fsA, tt.args.fsB, tt.args.pathA, tt.args.pathB)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CompareDir() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DiffDir() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CompareDir() got = %v, want %v", got, tt.want)
+				t.Errorf("DiffDir() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
-				t.Errorf("CompareDir() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("DiffDir() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
