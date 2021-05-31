@@ -9,15 +9,16 @@ import (
 	"github.com/spf13/afero"
 )
 
-func InMemoryCopy(osPath string) (afero.Fs, error) {
-	appFs := afero.NewMemMapFs()
+func InMemoryCopy(osPath, memPath string) (afero.Fs, error) {
+	memFs := afero.NewMemMapFs()
+	osFs := afero.NewOsFs()
 
-	err := CopyDir(afero.NewOsFs(), appFs, osPath, osPath)
+	err := CopyDir(osFs, memFs, osPath, memPath)
 	if err != nil {
-		return appFs, err
+		return memFs, err
 	}
 
-	return appFs, nil
+	return memFs, nil
 }
 
 func CopyDir(srcFs, dstFs afero.Fs, src, dst string) error {
@@ -74,42 +75,33 @@ func CopyDir(srcFs, dstFs afero.Fs, src, dst string) error {
 	return nil
 }
 
-func CopyFile(srcFs, dstFs afero.Fs, src, dst string) (err error) {
+func CopyFile(srcFs, dstFs afero.Fs, src, dst string) error {
 	in, err := srcFs.Open(src)
 	if err != nil {
-		return
+		return err
 	}
 	defer in.Close()
 
-	out, err := dstFs.Create(dst)
-	if err != nil {
-		return
-	}
-	defer func() {
-		if e := out.Close(); e != nil {
-			err = e
-		}
-	}()
-
 	si, err := srcFs.Stat(src)
 	if err != nil {
-		return
+		return err
 	}
 
-	err = dstFs.Chmod(dst, si.Mode())
+	out, err := dstFs.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, si.Mode())
 	if err != nil {
-		return
+		return err
 	}
+	defer out.Close()
 
 	_, err = io.Copy(out, in)
 	if err != nil {
-		return
+		return err
 	}
 
-	err = out.Sync()
+	err = out.Close()
 	if err != nil {
-		return
+		return err
 	}
 
-	return
+	return nil
 }

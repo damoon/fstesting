@@ -26,7 +26,10 @@ func CompareDir(fsA, fsB afero.Fs, pathA, pathB string) (bool, error) {
 	for i, fileA := range filesA {
 		fileB := filesB[i]
 
-		if fileA.Name() != fileB.Name() {
+		fileNameA := fileA.Name()
+		fileNameB := fileB.Name()
+
+		if fileNameA != fileNameB {
 			return false, nil
 		}
 
