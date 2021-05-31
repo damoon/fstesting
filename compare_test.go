@@ -3,6 +3,7 @@ package fstesting
 import (
 	"bytes"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -70,17 +71,24 @@ func TestCompareReader(t *testing.T) {
 	}
 }
 
+func mustWriteFile(t *testing.T, fs afero.Fs, filename string, data []byte, perm os.FileMode) {
+	err := afero.WriteFile(fs, filename, data, perm)
+	if err != nil {
+		t.Fatalf("write file %s: %v", filename, err)
+	}
+}
+
 func TestCompareFile(t *testing.T) {
 	fsA := afero.NewMemMapFs()
-	afero.WriteFile(fsA, "/file", []byte("abcdef"), 0644)
-	afero.WriteFile(fsA, "/empty", []byte(""), 0644)
+	mustWriteFile(t, fsA, "/file", []byte("abcdef"), 0644)
+	mustWriteFile(t, fsA, "/empty", []byte(""), 0644)
 
 	fsB := afero.NewMemMapFs()
-	afero.WriteFile(fsB, "/filesame", []byte("abcdef"), 0644)
-	afero.WriteFile(fsB, "/permissions", []byte("abcdef"), 0600)
-	afero.WriteFile(fsB, "/fileother", []byte("uvwxyz"), 0644)
-	afero.WriteFile(fsB, "/longer", []byte("abcdefghijkl"), 0644)
-	afero.WriteFile(fsB, "/empty", []byte(""), 0644)
+	mustWriteFile(t, fsB, "/filesame", []byte("abcdef"), 0644)
+	mustWriteFile(t, fsB, "/permissions", []byte("abcdef"), 0600)
+	mustWriteFile(t, fsB, "/fileother", []byte("uvwxyz"), 0644)
+	mustWriteFile(t, fsB, "/longer", []byte("abcdefghijkl"), 0644)
+	mustWriteFile(t, fsB, "/empty", []byte(""), 0644)
 
 	type args struct {
 		fsA   afero.Fs
@@ -164,27 +172,34 @@ func TestCompareFile(t *testing.T) {
 	}
 }
 
+func mustMkdirAll(t *testing.T, fs afero.Fs, path string, perm os.FileMode) {
+	err := fs.MkdirAll(path, perm)
+	if err != nil {
+		t.Fatalf("crate directory %s: %v", path, err)
+	}
+}
+
 func TestCompareDir(t *testing.T) {
 	fsA := afero.NewMemMapFs()
-	fsA.MkdirAll("/same", 0755)
-	afero.WriteFile(fsA, "/same/file", []byte("abcdef"), 0644)
+	mustMkdirAll(t, fsA, "/same", 0755)
+	mustWriteFile(t, fsA, "/same/file", []byte("abcdef"), 0644)
 
-	fsA.MkdirAll("/with/subdirectory", 0755)
-	afero.WriteFile(fsA, "/with/subdirectory", []byte("abcdef"), 0644)
+	mustMkdirAll(t, fsA, "/with/subdirectory", 0755)
+	mustWriteFile(t, fsA, "/with/subdirectory", []byte("abcdef"), 0644)
 
-	fsA.MkdirAll("/empty", 0755)
+	mustMkdirAll(t, fsA, "/empty", 0755)
 
 	fsB := afero.NewMemMapFs()
-	fsB.MkdirAll("/othersame", 0755)
-	afero.WriteFile(fsB, "/othersame/file", []byte("abcdef"), 0644)
+	mustMkdirAll(t, fsB, "/othersame", 0755)
+	mustWriteFile(t, fsB, "/othersame/file", []byte("abcdef"), 0644)
 
-	fsB.MkdirAll("/different", 0755)
-	afero.WriteFile(fsB, "/different/file", []byte("uvwxyz"), 0644)
+	mustMkdirAll(t, fsB, "/different", 0755)
+	mustWriteFile(t, fsB, "/different/file", []byte("uvwxyz"), 0644)
 
-	fsB.MkdirAll("/with/subdirectory", 0755)
-	afero.WriteFile(fsB, "/with/subdirectory", []byte("abcdef"), 0644)
+	mustMkdirAll(t, fsB, "/with/subdirectory", 0755)
+	mustWriteFile(t, fsB, "/with/subdirectory", []byte("abcdef"), 0644)
 
-	fsB.MkdirAll("/empty", 0755)
+	mustMkdirAll(t, fsB, "/empty", 0755)
 
 	type args struct {
 		fsA   afero.Fs
