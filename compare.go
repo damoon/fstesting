@@ -34,7 +34,14 @@ func CompareDir(fsA, fsB afero.Fs, pathA, pathB string) (bool, error) {
 		filepathB := filepath.Join(pathB, fileB.Name())
 
 		if fileA.IsDir() && fileB.IsDir() {
-			return CompareDir(fsA, fsB, filepathA, filepathB)
+			same, err := CompareDir(fsA, fsB, filepathA, filepathB)
+			if err != nil {
+				return false, err
+			}
+
+			if !same {
+				return false, nil
+			}
 		}
 
 		if !fileA.IsDir() && !fileB.IsDir() {
@@ -47,8 +54,6 @@ func CompareDir(fsA, fsB afero.Fs, pathA, pathB string) (bool, error) {
 				return false, nil
 			}
 		}
-
-		return false, nil
 	}
 
 	return true, nil
@@ -60,12 +65,19 @@ func CompareFile(fsA, fsB afero.Fs, pathA, pathB string) (bool, error) {
 		return false, err
 	}
 
-	sb, err := fsA.Stat(pathA)
+	sb, err := fsB.Stat(pathB)
 	if err != nil {
 		return false, err
 	}
 
 	if sa.Size() != sb.Size() {
+		return false, nil
+	}
+
+	aMod := sa.Mode()
+	bMod := sb.Mode()
+
+	if aMod != bMod {
 		return false, nil
 	}
 
