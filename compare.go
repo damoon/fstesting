@@ -2,64 +2,92 @@ package fstesting
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 
 	"github.com/spf13/afero"
 )
 
 func CompareDir(fsA, fsB afero.Fs, pathA, pathB string) (bool, error) {
+	same, _, err := DiffDir(fsA, fsB, pathA, pathB)
+	return same, err
+}
+
+func DiffDir(fsA, fsB afero.Fs, pathA, pathB string) (bool, string, error) {
 	filesA, err := afero.ReadDir(fsA, pathA)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	filesB, err := afero.ReadDir(fsB, pathB)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
-	if len(filesA) != len(filesB) {
-		return false, nil
+	fileNamesA := filesnames(filesA)
+	fileNamesB := filesnames(filesB)
+
+	if !listsEqual(fileNamesA, fileNamesB) {
+		return false, fmt.Sprintf("files differ in %s %v and %s %v", pathA, fileNamesA, pathB, fileNamesB), nil
 	}
 
 	for i, fileA := range filesA {
 		fileB := filesB[i]
 
-		fileNameA := fileA.Name()
-		fileNameB := fileB.Name()
+		fileName := fileA.Name()
 
-		if fileNameA != fileNameB {
-			return false, nil
-		}
-
-		filepathA := filepath.Join(pathA, fileA.Name())
-		filepathB := filepath.Join(pathB, fileB.Name())
+		filepathA := filepath.Join(pathA, fileName)
+		filepathB := filepath.Join(pathB, fileName)
 
 		if fileA.IsDir() && fileB.IsDir() {
-			same, err := CompareDir(fsA, fsB, filepathA, filepathB)
+			same, diff, err := DiffDir(fsA, fsB, filepathA, filepathB)
 			if err != nil {
-				return false, err
+				return false, "", err
 			}
 
 			if !same {
-				return false, nil
+				return false, diff, nil
 			}
 		}
 
 		if !fileA.IsDir() && !fileB.IsDir() {
 			same, err := CompareFile(fsA, fsB, filepathA, filepathB)
 			if err != nil {
-				return false, err
+				return false, "", err
 			}
 
 			if !same {
-				return false, nil
+				return false, fmt.Sprintf("files %s and %s differ", filepathA, filepathB), nil
 			}
 		}
 	}
 
-	return true, nil
+	return true, "", nil
+}
+
+func filesnames(infos []fs.FileInfo) []string {
+	names := []string{}
+	for _, info := range infos {
+		names = append(names, info.Name())
+	}
+
+	return names
+}
+
+func listsEqual(listA, listB []string) bool {
+	if len(listA) != len(listB) {
+		return false
+	}
+
+	for i, item := range listA {
+		if item != listB[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func CompareFile(fsA, fsB afero.Fs, pathA, pathB string) (bool, error) {

@@ -179,7 +179,7 @@ func mustMkdirAll(t *testing.T, fs afero.Fs, path string, perm os.FileMode) {
 	}
 }
 
-func TestCompareDir(t *testing.T) {
+func TestDiffDir(t *testing.T) {
 	fsA := afero.NewMemMapFs()
 	mustMkdirAll(t, fsA, "/same", 0755)
 	mustWriteFile(t, fsA, "/same/file", []byte("abcdef"), 0644)
@@ -211,62 +211,62 @@ func TestCompareDir(t *testing.T) {
 		name    string
 		args    args
 		want    bool
+		want1   string
 		wantErr bool
 	}{
 		{
-			"same files",
-			args{
+			name: "same files",
+			args: args{
 				fsA,
 				fsB,
 				"/same",
 				"/othersame",
 			},
-			true,
-			false,
+			want: true,
 		},
 		{
-			"different files",
-			args{
+			name: "different files",
+			args: args{
 				fsA,
 				fsB,
 				"/same",
 				"/different",
 			},
-			false,
-			false,
+			want1: "files /same/file and /different/file differ",
 		},
 		{
-			"with subdirectory",
-			args{
+			name: "with subdirectory",
+			args: args{
 				fsA,
 				fsB,
 				"/with",
 				"/with",
 			},
-			true,
-			false,
+			want: true,
 		},
 		{
-			"empty directories",
-			args{
+			name: "empty directories",
+			args: args{
 				fsA,
 				fsB,
 				"/empty",
 				"/empty",
 			},
-			true,
-			false,
+			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CompareDir(tt.args.fsA, tt.args.fsB, tt.args.pathA, tt.args.pathB)
+			got, got1, err := DiffDir(tt.args.fsA, tt.args.fsB, tt.args.pathA, tt.args.pathB)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CompareDir() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CompareDir() = %v, want %v", got, tt.want)
+				t.Errorf("CompareDir() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("CompareDir() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

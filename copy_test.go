@@ -15,14 +15,14 @@ func TestInMemoryCopy(t *testing.T) {
 
 	osFs := afero.NewOsFs()
 
-	same, err := CompareDir(osFs, memFs, "testdata", "testdata")
+	same, diff, err := DiffDir(osFs, memFs, "testdata", "testdata")
 	if err != nil {
 		t.Errorf("CompareDir() returned error: %v", err)
 		return
 	}
 
 	if !same {
-		t.Errorf("CompareDir() returned not equal, but should be a copy")
+		t.Errorf("CompareDir() returned not equal, but should be a copy: %v", diff)
 		return
 	}
 }
