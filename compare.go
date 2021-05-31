@@ -54,13 +54,13 @@ func DiffDir(fsA, fsB afero.Fs, pathA, pathB string) (bool, string, error) {
 		}
 
 		if !fileA.IsDir() && !fileB.IsDir() {
-			same, err := CompareFile(fsA, fsB, filepathA, filepathB)
+			same, diff, err := DiffFile(fsA, fsB, filepathA, filepathB)
 			if err != nil {
 				return false, "", err
 			}
 
 			if !same {
-				return false, fmt.Sprintf("files %s and %s differ", filepathA, filepathB), nil
+				return false, fmt.Sprintf("files %s and %s differ: %s", filepathA, filepathB, diff), nil
 			}
 		}
 	}

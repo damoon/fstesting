@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func TestDiffReader_(t *testing.T) {
+func TestDiffReader(t *testing.T) {
 	type args struct {
 		a io.Reader
 		b io.Reader
@@ -78,7 +78,7 @@ func mustWriteFile(t *testing.T, fs afero.Fs, filename string, data []byte, perm
 	}
 }
 
-func TestCompareFile(t *testing.T) {
+func TestDiffFile(t *testing.T) {
 	fsA := afero.NewMemMapFs()
 	mustWriteFile(t, fsA, "/file", []byte("abcdef"), 0644)
 	mustWriteFile(t, fsA, "/empty", []byte(""), 0644)
@@ -232,7 +232,7 @@ func TestDiffDir(t *testing.T) {
 				"/same",
 				"/different",
 			},
-			want1: "files /same/file and /different/file differ",
+			want1: "files /same/file and /different/file differ: content differs between abcdef and uvwxyz",
 		},
 		{
 			name: "with subdirectory",
