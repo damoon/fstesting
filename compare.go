@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/spf13/afero"
@@ -107,10 +108,6 @@ func DiffFile(fsA, fsB afero.Fs, pathA, pathB string) (bool, string, error) {
 		return false, "", err
 	}
 
-	if sa.Size() != sb.Size() {
-		return false, fmt.Sprintf("size differs between %d and %d", sa.Size(), sb.Size()), nil
-	}
-
 	aMod := sa.Mode()
 	bMod := sb.Mode()
 
@@ -157,7 +154,7 @@ func DiffReader(a, b io.Reader) (bool, string, error) {
 			if utf8.Valid(bufA) && utf8.Valid(bufB) {
 				snippetA := string(bufA[0:lenA])
 				snippetB := string(bufB[0:lenB])
-				return false, fmt.Sprintf("content differs between %s and %s", snippetA, snippetB), nil
+				return false, fmt.Sprintf("content differs between\n---\n%s\n---\nand\n---\n%s\n---\n", highlight(snippetA), highlight(snippetB)), nil
 			}
 
 			return false, fmt.Sprintf("content differs between %v and %v", bufA, bufB), nil
@@ -175,4 +172,11 @@ func DiffReader(a, b io.Reader) (bool, string, error) {
 			return false, "end of second reader reached before end of first reader", nil
 		}
 	}
+}
+
+func highlight(snippet string) string {
+	snippet = strings.ReplaceAll(snippet, "\t", "\\t")
+	snippet = strings.ReplaceAll(snippet, "\n", "\\n\n")
+
+	return snippet
 }

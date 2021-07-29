@@ -35,7 +35,7 @@ func TestDiffReader(t *testing.T) {
 				bytes.NewReader([]byte("abcdef")),
 				bytes.NewReader([]byte("uvwxyz")),
 			},
-			want1: "content differs between abcdef and uvwxyz",
+			want1: "content differs between\n---\nabcdef\n---\nand\n---\nuvwxyz\n---\n",
 		},
 		{
 			name: "different length",
@@ -43,7 +43,7 @@ func TestDiffReader(t *testing.T) {
 				bytes.NewReader([]byte("abcdefghijkl")),
 				bytes.NewReader([]byte("uvwxyz")),
 			},
-			want1: "content differs between abcdefghijkl and uvwxyz",
+			want1: "content differs between\n---\nabcdefghijkl\n---\nand\n---\nuvwxyz\n---\n",
 		},
 		{
 			name: "empty files",
@@ -121,7 +121,7 @@ func TestDiffFile(t *testing.T) {
 				"/file",
 				"/fileother",
 			},
-			want1: "content differs between abcdef and uvwxyz",
+			want1: "content differs between\n---\nabcdef\n---\nand\n---\nuvwxyz\n---\n",
 		},
 		{
 			name: "different permissions",
@@ -141,7 +141,7 @@ func TestDiffFile(t *testing.T) {
 				"/file",
 				"/longer",
 			},
-			want1: "size differs between 6 and 12",
+			want1: "content differs between\n---\nabcdef\n---\nand\n---\nabcdefghijkl\n---\n",
 		},
 		{
 			name: "empty files",
@@ -232,7 +232,7 @@ func TestDiffDir(t *testing.T) {
 				"/same",
 				"/different",
 			},
-			want1: "files /same/file and /different/file differ: content differs between abcdef and uvwxyz",
+			want1: "files /same/file and /different/file differ: content differs between\n---\nabcdef\n---\nand\n---\nuvwxyz\n---\n",
 		},
 		{
 			name: "with subdirectory",
