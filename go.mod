@@ -2,7 +2,7 @@ module github.com/damoon/fstesting
 
 go 1.23.0
 
-toolchain go1.24.2
+toolchain go1.24.3
 
 require github.com/spf13/afero v1.14.0
 
